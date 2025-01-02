@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Prompt Rating</title>
+    <style>
+      body {
+        width: 300px;
+        font-family: Arial, sans-serif;
+        padding: 10px;
+      }
+      textarea {
+        width: 100%;
+        height: 100px;
+        margin-bottom: 10px;
+      }
+      button {
+        padding: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      #rating {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Enter Prompt</h3>
+    <textarea id="promptInput" placeholder="Enter your prompt here"></textarea>
+    <button id="ratePromptBtn">Rate Prompt</button>
+    <p id="rating"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>
+
+
+

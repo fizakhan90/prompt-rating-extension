@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Prompt Rating Extension",
+  "description": "Rates prompts in a live browser environment using Gemini API.",
+  "version": "1.0",
+  "permissions": [
+    "activeTab"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ]
+}
+
+
+  
