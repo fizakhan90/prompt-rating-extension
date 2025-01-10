@@ -1,21 +1,31 @@
 {
   "manifest_version": 3,
-  "name": "Prompt Rating Extension",
-  "description": "Rates prompts in a live browser environment using Gemini API.",
+  "name": "AI Prompt Analyzer",
   "version": "1.0",
+  "description": "Real-time AI prompt analysis and suggestions",
   "permissions": [
-    "activeTab"
+    "storage",
+    "activeTab",
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
+  "content_scripts": [{
+    "matches": [
+      "https://*.openai.com/*",
+      "https://*.anthropic.com/*"
+    ],
+    "js": ["content.js"]
+  }],
   "action": {
     "default_popup": "popup.html"
-  },
-  "host_permissions": [
-    "http://*/*",
-    "https://*/*"
-  ]
+  }
 }
 
 

@@ -1,35 +1,84 @@
-const ratePromptBtn = document.getElementById('ratePromptBtn');
-const promptInput = document.getElementById('promptInput');
-const ratingDisplay = document.getElementById('rating');
+document.addEventListener('DOMContentLoaded', () => {
+  const apiKeyInput = document.getElementById('apiKey');
+  const promptInput = document.getElementById('promptInput');
+  const ratePromptBtn = document.getElementById('ratePromptBtn');
+  const resultsDiv = document.getElementById('results');
+  const loadingDiv = document.getElementById('loading');
+  const contentDiv = document.getElementById('content');
 
-ratePromptBtn.addEventListener('click', async () => {
-  const userPrompt = promptInput.value;
+  
+  chrome.storage.local.get(['geminiApiKey'], (result) => {
+    if (result.geminiApiKey) {
+      apiKeyInput.value = result.geminiApiKey;
+    }
+  });
 
-  if (userPrompt.trim() === '') {
-    alert('Please enter a prompt.');
-    return;
-  }
+  
+  apiKeyInput.addEventListener('change', () => {
+    const apiKey = apiKeyInput.value.trim();
+    chrome.storage.local.set({ geminiApiKey: apiKey });
+  });
 
-  const prompt = `**Evaluate the following prompt for clarity, specificity, and potential biases:** \n\n '${userPrompt}'`;
+  ratePromptBtn.addEventListener('click', async () => {
+    const apiKey = apiKeyInput.value.trim();
+    const userPrompt = promptInput.value.trim();
 
-  try {
-    const response = await fetch('/rate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ prompt })
-    });
-
-    if (!response.ok) {
-      throw new Error('Network response was not ok');
+    if (!apiKey) {
+      showError('Please enter your Gemini API key');
+      return;
     }
 
-    const data = await response.json();
-    ratingDisplay.textContent = data.message || 'Prompt rated successfully.'; 
+    if (!userPrompt) {
+      showError('Please enter a prompt to analyze');
+      return;
+    }
 
-  } catch (error) {
-    console.error('Error rating prompt:', error);
-    ratingDisplay.textContent = 'Error rating prompt.';
+    try {
+    
+      ratePromptBtn.disabled = true;
+      resultsDiv.style.display = 'block';
+      loadingDiv.style.display = 'flex';
+      contentDiv.style.display = 'none';
+
+      const analysis = await chrome.runtime.sendMessage({
+        action: 'analyzePrompt',
+        prompt: userPrompt
+      });
+
+      if (analysis.error) {
+        throw new Error(analysis.message);
+      }
+
+
+      contentDiv.innerHTML = `
+        <div class="rating">${analysis.rating}/10</div>
+        <div class="section">
+          <div class="section-title">Suggestions</div>
+          <div>${analysis.suggestions}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Strengths</div>
+          <div>${analysis.strengths}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Weaknesses</div>
+          <div>${analysis.weaknesses}</div>
+        </div>
+      `;
+      
+      contentDiv.style.display = 'block';
+    } catch (error) {
+      showError(error.message || 'Error analyzing prompt');
+    } finally {
+      ratePromptBtn.disabled = false;
+      loadingDiv.style.display = 'none';
+    }
+  });
+
+  function showError(message) {
+    resultsDiv.style.display = 'block';
+    contentDiv.innerHTML = `<div class="error">${message}</div>`;
+    contentDiv.style.display = 'block';
+    loadingDiv.style.display = 'none';
   }
 });
