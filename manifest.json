@@ -5,26 +5,20 @@
   "description": "Real-time AI prompt analysis and suggestions",
   "permissions": [
     "storage",
-    "activeTab",
-    "activeTab",
-    "scripting"
+    "activeTab"
   ],
   "host_permissions": [
     "https://generativelanguage.googleapis.com/*"
   ],
-  "background": {
-    "service_worker": "background.js",
-    "type": "module"
-  },
   "content_scripts": [{
     "matches": [
-      "https://*.openai.com/*",
-      "https://*.anthropic.com/*"
+      "https://chatgpt.com/*",
+      "https://claude.ai/*"
     ],
     "js": ["content.js"]
   }],
-  "action": {
-    "default_popup": "popup.html"
+  "background": {
+    "service_worker": "background.js"
   }
 }
 

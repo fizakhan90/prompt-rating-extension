@@ -1,154 +1,365 @@
 function debounce(func, wait) {
   let timeout;
-  return function (...args) {
+  return function(...args) {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    timeout = setTimeout(() => func.apply(this, args), wait);
   };
 }
 
 class PromptAnalyzer {
   constructor() {
-    this.container = null;
-    this.currentPrompt = '';
+    this.lastAnalyzedPrompt = '';
     this.isAnalyzing = false;
+    this.analysisQueue = [];
+    this.initialize();
   }
 
   initialize() {
     this.createUI();
-    this.setupObserver();
+    this.observeTextarea();
   }
 
   createUI() {
-    this.container = document.createElement('div');
-    this.container.id = 'prompt-feedback-container';
-    this.container.innerHTML = `
-      <div class="prompt-feedback">
-        <div class="feedback-header">
+    const container = document.createElement('div');
+    container.id = 'prompt-analyzer';
+    container.innerHTML = `
+      <div class="analyzer-panel">
+        <div class="analyzer-header">
           <h3>Prompt Analysis</h3>
           <button class="close-btn">×</button>
         </div>
-        <div class="feedback-content">
-          <div class="loading hidden">Analyzing...</div>
-          <div class="results hidden"></div>
-          <div class="error hidden"></div>
+        <div class="analyzer-content">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-label">Rating</div>
+              <div class="metric-value rating">-/10</div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">Words</div>
+              <div class="metric-value word-count">0</div>
+            </div>
+          </div>
+          
+          <div class="loading hidden">
+            <div class="spinner"></div>
+            <span>Analyzing prompt...</span>
+          </div>
+          
+          <div class="analysis-sections">
+            <div class="section suggestions">
+              <div class="section-header">
+                <span class="section-icon">💡</span>
+                <h4>Suggestions</h4>
+              </div>
+              <div class="section-content"></div>
+            </div>
+            
+            <div class="section strengths">
+              <div class="section-header">
+                <span class="section-icon">✨</span>
+                <h4>Strengths</h4>
+              </div>
+              <div class="section-content"></div>
+            </div>
+            
+            <div class="section weaknesses">
+              <div class="section-header">
+                <span class="section-icon">⚠️</span>
+                <h4>Weaknesses</h4>
+              </div>
+              <div class="section-content"></div>
+            </div>
+          </div>
         </div>
       </div>
     `;
 
-    // Add styles
     const styles = document.createElement('style');
     styles.textContent = `
-      #prompt-feedback-container {
+      #prompt-analyzer {
         position: fixed;
-        bottom: 20px;
+        top: 20px;
         right: 20px;
-        width: 300px;
+        width: 320px;
+        z-index: 99999;
+        font-family: -apple-system, system-ui, sans-serif;
+      }
+
+      .analyzer-panel {
         background: white;
-        border-radius: 8px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        z-index: 10000;
-        font-family: system-ui, -apple-system, sans-serif;
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e0e0e0;
+        opacity: 0.95;
       }
 
-      .prompt-feedback {
-        padding: 15px;
-      }
-
-      .feedback-header {
+      .analyzer-header {
+        padding: 12px 16px;
+        border-bottom: 1px solid #e0e0e0;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 15px;
+        background: #f8f9fa;
+        border-radius: 12px 12px 0 0;
+        cursor: move;
       }
 
-      .feedback-header h3 {
+      .analyzer-header h3 {
         margin: 0;
-        font-size: 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
       }
 
       .close-btn {
         background: none;
         border: none;
-        font-size: 20px;
+        font-size: 18px;
         cursor: pointer;
-        padding: 0 5px;
-      }
-
-      .loading, .results, .error {
-        padding: 10px;
+        color: #666;
+        padding: 4px 8px;
         border-radius: 4px;
       }
 
+      .close-btn:hover {
+        background: #e0e0e0;
+      }
+
+      .analyzer-content {
+        padding: 16px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .metric-card {
+        background: #f8f9fa;
+        padding: 12px;
+        border-radius: 8px;
+        text-align: center;
+      }
+
+      .metric-label {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+
+      .metric-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: #2563eb;
+      }
+
       .loading {
-        background: #f5f5f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        gap: 10px;
       }
 
-      .error {
-        background: #fee;
-        color: #d32f2f;
+      .spinner {
+        width: 20px;
+        height: 20px;
+        border: 2px solid #e0e0e0;
+        border-top-color: #2563eb;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
       }
 
-      .hidden {
-        display: none;
-      }
-
-      .rating {
-        font-size: 24px;
-        font-weight: bold;
-        margin: 10px 0;
+      @keyframes spin {
+        to { transform: rotate(360deg); }
       }
 
       .section {
-        margin: 10px 0;
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 12px;
+        margin-bottom: 12px;
       }
 
-      .section-title {
-        font-weight: 600;
-        margin-bottom: 5px;
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+
+      .section-content {
+        font-size: 14px;
+        line-height: 1.5;
+        color: #475569;
+      }
+
+      .suggestions { background: #fff7ed; }
+      .strengths { background: #f0fdf4; }
+      .weaknesses { background: #fef2f2; }
+
+      .hidden {
+        display: none !important;
       }
     `;
 
     document.head.appendChild(styles);
-    document.body.appendChild(this.container);
+    document.body.appendChild(container);
 
-    // Add event listeners
-    this.container.querySelector('.close-btn').addEventListener('click', () => {
-      this.container.classList.add('hidden');
+    
+    this.makeDraggable(container.querySelector('.analyzer-panel'), container.querySelector('.analyzer-header'));
+
+    
+    container.querySelector('.close-btn').addEventListener('click', () => {
+      container.classList.toggle('hidden');
     });
+
+    this.container = container;
   }
 
-  setupObserver() {
-    const observer = new MutationObserver(
-      debounce(() => this.checkForPromptChanges(), 1000)
-    );
+  makeDraggable(element, handle) {
+    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+
+    const dragMouseDown = (e) => {
+      e.preventDefault();
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      document.addEventListener('mousemove', elementDrag);
+      document.addEventListener('mouseup', closeDragElement);
+    };
+
+    const elementDrag = (e) => {
+      e.preventDefault();
+      pos1 = pos3 - e.clientX;
+      pos2 = pos4 - e.clientY;
+      pos3 = e.clientX;
+      pos4 = e.clientY;
+      
+      const rect = element.getBoundingClientRect();
+      const newTop = element.offsetTop - pos2;
+      const newLeft = element.offsetLeft - pos1;
+      
+      
+      if (newTop > 0 && newTop < window.innerHeight - rect.height) {
+        element.style.top = newTop + "px";
+      }
+      if (newLeft > 0 && newLeft < window.innerWidth - rect.width) {
+        element.style.left = newLeft + "px";
+      }
+    };
+
+    const closeDragElement = () => {
+      document.removeEventListener('mousemove', elementDrag);
+      document.removeEventListener('mouseup', closeDragElement);
+    };
+
+    handle.addEventListener('mousedown', dragMouseDown);
+  }
+
+  observeTextarea() {
+    const textareaSelectors = [
+      '#prompt-textarea',
+      '[data-id="root"]',
+      'textarea.prompt-textarea',
+      'textarea[placeholder*="Send a message"]',
+      'textarea[placeholder*="Type your message"]',
+      'textarea[role="textbox"]',
+      '.prosemirror-editor',
+      '[contenteditable="true"]'
+    ];
+
+    const checkForTextarea = () => {
+      for (const selector of textareaSelectors) {
+        const elements = document.querySelectorAll(selector);
+        elements.forEach(element => {
+          if (!element.dataset.promptAnalyzerAttached) {
+            this.attachToTextarea(element);
+          }
+        });
+      }
+    };
+
+    
+    checkForTextarea();
+
+    
+    const observer = new MutationObserver(debounce(() => {
+      checkForTextarea();
+    }, 500));
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      attributes: true
     });
+
+    
+    setInterval(checkForTextarea, 2000);
   }
 
-  async checkForPromptChanges() {
-    const textarea = document.querySelector('textarea');
-    if (!textarea?.value || textarea.value === this.currentPrompt || this.isAnalyzing) {
-      return;
-    }
+  attachToTextarea(element) {
+    element.dataset.promptAnalyzerAttached = 'true';
+    
+    const captureInput = debounce((e) => {
+      const value = e.target.value || e.target.textContent;
+      if (value?.trim()) {
+        this.updateWordCount(value);
+        if (value !== this.lastAnalyzedPrompt) {
+          this.queueAnalysis(value);
+        }
+      }
+    }, 750);
 
-    this.currentPrompt = textarea.value;
-    await this.analyzePrompt(this.currentPrompt);
+    
+    const events = ['input', 'change', 'keyup'];
+    events.forEach(event => {
+      element.addEventListener(event, captureInput);
+    });
+
+    
+    const initialContent = element.value || element.textContent;
+    if (initialContent?.trim()) {
+      this.updateWordCount(initialContent);
+      this.queueAnalysis(initialContent);
+    }
+  }
+
+  updateWordCount(text) {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    const wordCountElement = this.container.querySelector('.word-count');
+    wordCountElement.textContent = words.length.toString();
+  }
+
+  queueAnalysis(prompt) {
+    this.analysisQueue.push(prompt);
+    this.processQueue();
+  }
+
+  async processQueue() {
+    if (this.isAnalyzing || this.analysisQueue.length === 0) return;
+
+    const prompt = this.analysisQueue.pop();
+    this.analysisQueue = []; 
+    
+    await this.analyzePrompt(prompt);
   }
 
   async analyzePrompt(prompt) {
-    const content = this.container.querySelector('.feedback-content');
-    const loading = content.querySelector('.loading');
-    const results = content.querySelector('.results');
-    const error = content.querySelector('.error');
+    if (this.isAnalyzing) return;
+
+    const loading = this.container.querySelector('.loading');
+    const sections = this.container.querySelector('.analysis-sections');
 
     try {
       this.isAnalyzing = true;
+      this.lastAnalyzedPrompt = prompt;
+      
       loading.classList.remove('hidden');
-      results.classList.add('hidden');
-      error.classList.add('hidden');
+      sections.classList.add('hidden');
 
       const analysis = await chrome.runtime.sendMessage({
         action: 'analyzePrompt',
@@ -156,41 +367,35 @@ class PromptAnalyzer {
       });
 
       if (analysis.error) {
-        throw new Error(analysis.message);
+        throw new Error(analysis.error.message || 'Analysis failed');
       }
 
-      results.innerHTML = `
-        <div class="rating">${analysis.rating}/10</div>
-        <div class="section">
-          <div class="section-title">Suggestions</div>
-          <div>${analysis.suggestions}</div>
-        </div>
-        <div class="section">
-          <div class="section-title">Strengths</div>
-          <div>${analysis.strengths}</div>
-        </div>
-        <div class="section">
-          <div class="section-title">Weaknesses</div>
-          <div>${analysis.weaknesses}</div>
-        </div>
-      `;
+      
+      this.container.querySelector('.rating').textContent = `${analysis.rating}/10`;
+      this.container.querySelector('.suggestions .section-content').textContent = analysis.suggestions;
+      this.container.querySelector('.strengths .section-content').textContent = analysis.strengths;
+      this.container.querySelector('.weaknesses .section-content').textContent = analysis.weaknesses;
 
-      results.classList.remove('hidden');
-    } catch (err) {
-      error.textContent = err.message;
-      error.classList.remove('hidden');
+      sections.classList.remove('hidden');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      this.container.querySelector('.suggestions .section-content').textContent = 
+        'Analysis failed. Please check your API key configuration.';
     } finally {
       this.isAnalyzing = false;
       loading.classList.add('hidden');
+      this.processQueue();
     }
   }
 }
 
-// Initialize when the page is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    new PromptAnalyzer().initialize();
-  });
-} else {
-  new PromptAnalyzer().initialize();
-}
+
+const initAnalyzer = () => {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => new PromptAnalyzer());
+  } else {
+    new PromptAnalyzer();
+  }
+};
+
+initAnalyzer();
