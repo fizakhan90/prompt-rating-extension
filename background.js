@@ -5,6 +5,14 @@ chrome.storage.local.get(['geminiApiKey'], function(result) {
   console.log('API Key status:', GEMINI_API_KEY ? 'Present' : 'Missing');
 });
 
+
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'local' && changes.geminiApiKey) {
+    GEMINI_API_KEY = changes.geminiApiKey.newValue;
+  }
+});
+
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'analyzePrompt') {
     console.log('Received prompt for analysis:', request.prompt);
@@ -21,7 +29,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           message: error.message
         });
       });
-    return true;
+    return true; 
   }
 });
 
@@ -37,20 +45,21 @@ async function analyzePromptWithGemini(prompt) {
   const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent';
   
   const analysisPrompt = 
-    'Analyze this AI prompt and rate it based on:\n' +
-    '- Clarity\n' +
-    '- Specificity\n' +
-    '- Contextual information\n' +
-    '- Goal orientation\n\n' +
-    'Prompt: "' + prompt + '"\n\n' +
-    'Provide response as a valid JSON object with this exact format:\n' +
+    'You are an advanced AI trained to analyze and enhance prompts. Your task is to:\n' +
+    '1. Analyze the given prompt for effectiveness\n' +
+    '2. Generate an enhanced version that maintains the original intent while improving clarity\n' +
+    '3. Provide specific feedback\n\n' +
+    'Here is the prompt to analyze:\n\n' +
+    '"' + prompt + '"\n\n' +
+    'Provide a response as a JSON object in the exact format below. Be concise and specific:\n\n' +
     '{\n' +
-    '  "rating": <1-10>,\n' +
-    '  "suggestions": "<specific improvements>",\n' +
-    '  "strengths": "<what works well>",\n' +
-    '  "weaknesses": "<areas to improve>"\n' +
-    '}\n' +
-    'Return only the JSON object with no markdown formatting or additional text.';
+    '  "rating": <number between 1-10>,\n' +
+    '  "enhancedPrompt": "<improved version that maintains original intent but adds clarity and specificity>",\n' +
+    '  "suggestions": "<2-3 clear, actionable improvements>",\n' +
+    '  "strengths": "<2-3 specific strong points>",\n' +
+    '  "weaknesses": "<2-3 specific areas needing improvement>"\n' +
+    '}\n\n' +
+    'Return only the JSON object with no additional text or formatting.';
 
   const requestBody = {
     contents: [{
@@ -81,12 +90,12 @@ async function analyzePromptWithGemini(prompt) {
       throw new Error('Invalid API response format');
     }
 
-
+    
     const cleanedText = text
-      .replace(/```json\s*/g, '') 
-      .replace(/```\s*$/g, '')    
-      .trim();                    
-
+      .replace(/```json\s*/g, '')
+      .replace(/```\s*$/g, '')
+      .trim();
+    
     try {
       return JSON.parse(cleanedText);
     } catch (parseError) {

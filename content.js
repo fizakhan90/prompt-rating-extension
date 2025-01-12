@@ -11,6 +11,7 @@ class PromptAnalyzer {
     this.lastAnalyzedPrompt = '';
     this.isAnalyzing = false;
     this.analysisQueue = [];
+    this.currentTextarea = null;
     this.initialize();
   }
 
@@ -46,6 +47,15 @@ class PromptAnalyzer {
           </div>
           
           <div class="analysis-sections">
+            <div class="section enhanced-prompt">
+              <div class="section-header">
+                <span class="section-icon">✍️</span>
+                <h4>Enhanced Prompt</h4>
+                <button class="copy-btn" title="Copy to clipboard">📋</button>
+              </div>
+              <div class="section-content"></div>
+            </div>
+
             <div class="section suggestions">
               <div class="section-header">
                 <span class="section-icon">💡</span>
@@ -69,6 +79,10 @@ class PromptAnalyzer {
               </div>
               <div class="section-content"></div>
             </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="apply-enhanced">Apply Enhanced Prompt</button>
           </div>
         </div>
       </div>
@@ -127,7 +141,7 @@ class PromptAnalyzer {
 
       .analyzer-content {
         padding: 16px;
-        max-height: 400px;
+        max-height: calc(100vh - 100px);
         overflow-y: auto;
       }
 
@@ -186,6 +200,7 @@ class PromptAnalyzer {
       }
 
       .section-header {
+        position: relative;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -198,9 +213,72 @@ class PromptAnalyzer {
         color: #475569;
       }
 
+      .enhanced-prompt {
+        background: #f0f9ff;
+        border-left: 4px solid #2563eb;
+      }
+
       .suggestions { background: #fff7ed; }
       .strengths { background: #f0fdf4; }
       .weaknesses { background: #fef2f2; }
+
+      .copy-btn {
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        opacity: 0.7;
+      }
+
+      .copy-btn:hover {
+        opacity: 1;
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .action-buttons {
+        margin-top: 16px;
+        display: flex;
+        justify-content: center;
+      }
+
+      .apply-enhanced {
+        background: #2563eb;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+
+      .apply-enhanced:hover {
+        background: #1d4ed8;
+      }
+
+      .success-message {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: #10b981;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        animation: fadeInOut 2s forwards;
+        z-index: 100000;
+      }
+
+      @keyframes fadeInOut {
+        0% { opacity: 0; transform: translateY(20px); }
+        20% { opacity: 1; transform: translateY(0); }
+        80% { opacity: 1; transform: translateY(0); }
+        100% { opacity: 0; transform: translateY(-20px); }
+      }
 
       .hidden {
         display: none !important;
@@ -209,16 +287,51 @@ class PromptAnalyzer {
 
     document.head.appendChild(styles);
     document.body.appendChild(container);
-
     
     this.makeDraggable(container.querySelector('.analyzer-panel'), container.querySelector('.analyzer-header'));
-
+    this.container = container;
+    
     
     container.querySelector('.close-btn').addEventListener('click', () => {
       container.classList.toggle('hidden');
     });
 
-    this.container = container;
+    this.setupEnhancedPromptFeatures();
+  }
+
+  setupEnhancedPromptFeatures() {
+    const copyBtn = this.container.querySelector('.copy-btn');
+    const applyBtn = this.container.querySelector('.apply-enhanced');
+
+    copyBtn.addEventListener('click', () => {
+      const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
+      navigator.clipboard.writeText(enhancedPrompt);
+      this.showSuccessMessage('Enhanced prompt copied to clipboard');
+    });
+
+    applyBtn.addEventListener('click', () => {
+      if (this.currentTextarea) {
+        const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
+        if (this.currentTextarea.value !== undefined) {
+          this.currentTextarea.value = enhancedPrompt;
+        } else {
+          this.currentTextarea.textContent = enhancedPrompt;
+        }
+        this.currentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+        this.showSuccessMessage('Enhanced prompt applied');
+      }
+    });
+  }
+
+  showSuccessMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.className = 'success-message';
+    messageElement.textContent = message;
+    document.body.appendChild(messageElement);
+
+    setTimeout(() => {
+      messageElement.remove();
+    }, 2000);
   }
 
   makeDraggable(element, handle) {
@@ -242,7 +355,6 @@ class PromptAnalyzer {
       const rect = element.getBoundingClientRect();
       const newTop = element.offsetTop - pos2;
       const newLeft = element.offsetLeft - pos1;
-      
       
       if (newTop > 0 && newTop < window.innerHeight - rect.height) {
         element.style.top = newTop + "px";
@@ -282,11 +394,9 @@ class PromptAnalyzer {
         });
       }
     };
-
     
     checkForTextarea();
 
-    
     const observer = new MutationObserver(debounce(() => {
       checkForTextarea();
     }, 500));
@@ -297,7 +407,6 @@ class PromptAnalyzer {
       attributes: true
     });
 
-    
     setInterval(checkForTextarea, 2000);
   }
 
@@ -314,13 +423,15 @@ class PromptAnalyzer {
       }
     }, 750);
 
-    
     const events = ['input', 'change', 'keyup'];
     events.forEach(event => {
       element.addEventListener(event, captureInput);
     });
 
-    
+    element.addEventListener('focus', () => {
+      this.currentTextarea = element;
+    });
+
     const initialContent = element.value || element.textContent;
     if (initialContent?.trim()) {
       this.updateWordCount(initialContent);
@@ -343,7 +454,7 @@ class PromptAnalyzer {
     if (this.isAnalyzing || this.analysisQueue.length === 0) return;
 
     const prompt = this.analysisQueue.pop();
-    this.analysisQueue = []; 
+    this.analysisQueue = []; // Clear queue to prevent stale analyses
     
     await this.analyzePrompt(prompt);
   }
@@ -370,8 +481,9 @@ class PromptAnalyzer {
         throw new Error(analysis.error.message || 'Analysis failed');
       }
 
-      
+    
       this.container.querySelector('.rating').textContent = `${analysis.rating}/10`;
+      this.container.querySelector('.enhanced-prompt .section-content').textContent = analysis.enhancedPrompt;
       this.container.querySelector('.suggestions .section-content').textContent = analysis.suggestions;
       this.container.querySelector('.strengths .section-content').textContent = analysis.strengths;
       this.container.querySelector('.weaknesses .section-content').textContent = analysis.weaknesses;
@@ -386,6 +498,16 @@ class PromptAnalyzer {
       loading.classList.add('hidden');
       this.processQueue();
     }
+  }
+
+  togglePanel() {
+    this.container.classList.toggle('hidden');
+  }
+
+  resize(width, height) {
+    const panel = this.container.querySelector('.analyzer-panel');
+    if (width) panel.style.width = `${width}px`;
+    if (height) panel.style.maxHeight = `${height}px`;
   }
 }
 
