@@ -12,6 +12,7 @@ class PromptAnalyzer {
     this.isAnalyzing = false;
     this.analysisQueue = [];
     this.currentTextarea = null;
+    this.isMinimized = false;
     this.initialize();
   }
 
@@ -26,8 +27,14 @@ class PromptAnalyzer {
     container.innerHTML = `
       <div class="analyzer-panel">
         <div class="analyzer-header">
-          <h3>Prompt Analysis</h3>
-          <button class="close-btn">×</button>
+          <div class="header-left">
+            <span class="status-indicator"></span>
+            <h3>Prompt Analysis</h3>
+          </div>
+          <div class="header-controls">
+            <button class="minimize-btn" title="Minimize">−</button>
+            <button class="close-btn" title="Close">×</button>
+          </div>
         </div>
         <div class="analyzer-content">
           <div class="metrics-grid">
@@ -83,6 +90,7 @@ class PromptAnalyzer {
 
           <div class="action-buttons">
             <button class="apply-enhanced">Apply Enhanced Prompt</button>
+            <button class="reset-analysis">Reset Analysis</button>
           </div>
         </div>
       </div>
@@ -97,6 +105,7 @@ class PromptAnalyzer {
         width: 320px;
         z-index: 99999;
         font-family: -apple-system, system-ui, sans-serif;
+        transition: all 0.3s ease;
       }
 
       .analyzer-panel {
@@ -105,6 +114,21 @@ class PromptAnalyzer {
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
         border: 1px solid #e0e0e0;
         opacity: 0.95;
+        transition: all 0.3s ease;
+      }
+
+      .analyzer-panel.minimized {
+        width: 180px !important;
+        transform: translateY(-80%);
+      }
+
+      .analyzer-panel.minimized .analyzer-content {
+        display: none;
+      }
+
+      .analyzer-panel.minimized .analyzer-header {
+        border-bottom: none;
+        border-radius: 12px;
       }
 
       .analyzer-header {
@@ -118,6 +142,24 @@ class PromptAnalyzer {
         cursor: move;
       }
 
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .header-controls {
+        display: flex;
+        gap: 4px;
+      }
+
+      .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #22c55e;
+      }
+
       .analyzer-header h3 {
         margin: 0;
         font-size: 14px;
@@ -125,18 +167,20 @@ class PromptAnalyzer {
         color: #333;
       }
 
-      .close-btn {
+      .minimize-btn, .close-btn {
         background: none;
         border: none;
-        font-size: 18px;
+        font-size: 16px;
         cursor: pointer;
         color: #666;
         padding: 4px 8px;
         border-radius: 4px;
+        transition: all 0.2s ease;
       }
 
-      .close-btn:hover {
+      .minimize-btn:hover, .close-btn:hover {
         background: #e0e0e0;
+        color: #333;
       }
 
       .analyzer-content {
@@ -188,15 +232,18 @@ class PromptAnalyzer {
         animation: spin 1s linear infinite;
       }
 
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
       .section {
         background: #f8f9fa;
         border-radius: 8px;
         padding: 12px;
         margin-bottom: 12px;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+      }
+
+      .section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
       }
 
       .section-header {
@@ -233,6 +280,7 @@ class PromptAnalyzer {
         padding: 4px;
         border-radius: 4px;
         opacity: 0.7;
+        transition: opacity 0.2s;
       }
 
       .copy-btn:hover {
@@ -241,9 +289,9 @@ class PromptAnalyzer {
       }
 
       .action-buttons {
-        margin-top: 16px;
         display: flex;
-        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
       }
 
       .apply-enhanced {
@@ -255,10 +303,26 @@ class PromptAnalyzer {
         cursor: pointer;
         font-weight: 500;
         transition: background 0.2s;
+        flex: 1;
       }
 
       .apply-enhanced:hover {
         background: #1d4ed8;
+      }
+
+      .reset-analysis {
+        background: #e5e7eb;
+        color: #374151;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s;
+      }
+
+      .reset-analysis:hover {
+        background: #d1d5db;
       }
 
       .success-message {
@@ -273,11 +337,42 @@ class PromptAnalyzer {
         z-index: 100000;
       }
 
+      .tooltip {
+        position: absolute;
+        background: #333;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .tooltip.visible {
+        opacity: 1;
+      }
+
       @keyframes fadeInOut {
         0% { opacity: 0; transform: translateY(20px); }
         20% { opacity: 1; transform: translateY(0); }
         80% { opacity: 1; transform: translateY(0); }
         100% { opacity: 0; transform: translateY(-20px); }
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      .analyzing .status-indicator {
+        background: #f59e0b;
+        animation: pulse 1s infinite;
       }
 
       .hidden {
@@ -291,12 +386,59 @@ class PromptAnalyzer {
     this.makeDraggable(container.querySelector('.analyzer-panel'), container.querySelector('.analyzer-header'));
     this.container = container;
     
-    
-    container.querySelector('.close-btn').addEventListener('click', () => {
-      container.classList.toggle('hidden');
+    this.setupEventListeners();
+  }
+
+  setupEventListeners() {
+    const panel = this.container.querySelector('.analyzer-panel');
+    const minimizeBtn = this.container.querySelector('.minimize-btn');
+    const closeBtn = this.container.querySelector('.close-btn');
+    const resetBtn = this.container.querySelector('.reset-analysis');
+
+    minimizeBtn.addEventListener('click', () => {
+      this.isMinimized = !this.isMinimized;
+      panel.classList.toggle('minimized');
+      minimizeBtn.textContent = this.isMinimized ? '+' : '−';
+      minimizeBtn.title = this.isMinimized ? 'Expand' : 'Minimize';
+    });
+
+    closeBtn.addEventListener('click', () => {
+      this.container.classList.add('hidden');
+    });
+
+    resetBtn.addEventListener('click', () => {
+      this.resetAnalysis();
     });
 
     this.setupEnhancedPromptFeatures();
+    this.setupTooltips();
+  }
+
+  setupTooltips() {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    document.body.appendChild(tooltip);
+
+    const showTooltip = (element, text) => {
+      const rect = element.getBoundingClientRect();
+      tooltip.textContent = text;
+      tooltip.style.top = `${rect.bottom + 5}px`;
+      tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
+      tooltip.classList.add('visible');
+    };
+
+    const hideTooltip = () => {
+      tooltip.classList.remove('visible');
+    };
+
+    const tooltipElements = this.container.querySelectorAll('[title]');
+    tooltipElements.forEach(element => {
+      const tooltipText = element.getAttribute('title');
+      element.removeAttribute('title');
+      
+      element.addEventListener('mouseenter', () => showTooltip(element, tooltipText));
+      element.addEventListener('mouseleave', hideTooltip);
+    });
   }
 
   setupEnhancedPromptFeatures() {
@@ -321,17 +463,6 @@ class PromptAnalyzer {
         this.showSuccessMessage('Enhanced prompt applied');
       }
     });
-  }
-
-  showSuccessMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.className = 'success-message';
-    messageElement.textContent = message;
-    document.body.appendChild(messageElement);
-
-    setTimeout(() => {
-      messageElement.remove();
-    }, 2000);
   }
 
   makeDraggable(element, handle) {
@@ -362,162 +493,185 @@ class PromptAnalyzer {
       if (newLeft > 0 && newLeft < window.innerWidth - rect.width) {
         element.style.left = newLeft + "px";
       }
-    };
+  };
 
-    const closeDragElement = () => {
-      document.removeEventListener('mousemove', elementDrag);
-      document.removeEventListener('mouseup', closeDragElement);
-    };
+  const closeDragElement = () => {
+    document.removeEventListener('mousemove', elementDrag);
+    document.removeEventListener('mouseup', closeDragElement);
+  };
 
-    handle.addEventListener('mousedown', dragMouseDown);
-  }
+  handle.addEventListener('mousedown', dragMouseDown);
+}
 
-  observeTextarea() {
-    const textareaSelectors = [
-      '#prompt-textarea',
-      '[data-id="root"]',
-      'textarea.prompt-textarea',
-      'textarea[placeholder*="Send a message"]',
-      'textarea[placeholder*="Type your message"]',
-      'textarea[role="textbox"]',
-      '.prosemirror-editor',
-      '[contenteditable="true"]'
-    ];
+observeTextarea() {
+  const textareaSelectors = [
+    '#prompt-textarea',
+    '[data-id="root"]',
+    'textarea.prompt-textarea',
+    'textarea[placeholder*="Send a message"]',
+    'textarea[placeholder*="Type your message"]',
+    'textarea[role="textbox"]',
+    '.prosemirror-editor',
+    '[contenteditable="true"]'
+  ];
 
-    const checkForTextarea = () => {
-      for (const selector of textareaSelectors) {
-        const elements = document.querySelectorAll(selector);
-        elements.forEach(element => {
-          if (!element.dataset.promptAnalyzerAttached) {
-            this.attachToTextarea(element);
-          }
-        });
-      }
-    };
-    
-    checkForTextarea();
-
-    const observer = new MutationObserver(debounce(() => {
-      checkForTextarea();
-    }, 500));
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true
-    });
-
-    setInterval(checkForTextarea, 2000);
-  }
-
-  attachToTextarea(element) {
-    element.dataset.promptAnalyzerAttached = 'true';
-    
-    const captureInput = debounce((e) => {
-      const value = e.target.value || e.target.textContent;
-      if (value?.trim()) {
-        this.updateWordCount(value);
-        if (value !== this.lastAnalyzedPrompt) {
-          this.queueAnalysis(value);
+  const checkForTextarea = () => {
+    for (const selector of textareaSelectors) {
+      const elements = document.querySelectorAll(selector);
+      elements.forEach(element => {
+        if (!element.dataset.promptAnalyzerAttached) {
+          this.attachToTextarea(element);
         }
-      }
-    }, 750);
-
-    const events = ['input', 'change', 'keyup'];
-    events.forEach(event => {
-      element.addEventListener(event, captureInput);
-    });
-
-    element.addEventListener('focus', () => {
-      this.currentTextarea = element;
-    });
-
-    const initialContent = element.value || element.textContent;
-    if (initialContent?.trim()) {
-      this.updateWordCount(initialContent);
-      this.queueAnalysis(initialContent);
-    }
-  }
-
-  updateWordCount(text) {
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    const wordCountElement = this.container.querySelector('.word-count');
-    wordCountElement.textContent = words.length.toString();
-  }
-
-  queueAnalysis(prompt) {
-    this.analysisQueue.push(prompt);
-    this.processQueue();
-  }
-
-  async processQueue() {
-    if (this.isAnalyzing || this.analysisQueue.length === 0) return;
-
-    const prompt = this.analysisQueue.pop();
-    this.analysisQueue = []; // Clear queue to prevent stale analyses
-    
-    await this.analyzePrompt(prompt);
-  }
-
-  async analyzePrompt(prompt) {
-    if (this.isAnalyzing) return;
-
-    const loading = this.container.querySelector('.loading');
-    const sections = this.container.querySelector('.analysis-sections');
-
-    try {
-      this.isAnalyzing = true;
-      this.lastAnalyzedPrompt = prompt;
-      
-      loading.classList.remove('hidden');
-      sections.classList.add('hidden');
-
-      const analysis = await chrome.runtime.sendMessage({
-        action: 'analyzePrompt',
-        prompt
       });
-
-      if (analysis.error) {
-        throw new Error(analysis.error.message || 'Analysis failed');
-      }
-
-    
-      this.container.querySelector('.rating').textContent = `${analysis.rating}/10`;
-      this.container.querySelector('.enhanced-prompt .section-content').textContent = analysis.enhancedPrompt;
-      this.container.querySelector('.suggestions .section-content').textContent = analysis.suggestions;
-      this.container.querySelector('.strengths .section-content').textContent = analysis.strengths;
-      this.container.querySelector('.weaknesses .section-content').textContent = analysis.weaknesses;
-
-      sections.classList.remove('hidden');
-    } catch (error) {
-      console.error('Analysis error:', error);
-      this.container.querySelector('.suggestions .section-content').textContent = 
-        'Analysis failed. Please check your API key configuration.';
-    } finally {
-      this.isAnalyzing = false;
-      loading.classList.add('hidden');
-      this.processQueue();
     }
-  }
+  };
+  
+  checkForTextarea();
 
-  togglePanel() {
-    this.container.classList.toggle('hidden');
-  }
+  const observer = new MutationObserver(debounce(() => {
+    checkForTextarea();
+  }, 500));
 
-  resize(width, height) {
-    const panel = this.container.querySelector('.analyzer-panel');
-    if (width) panel.style.width = `${width}px`;
-    if (height) panel.style.maxHeight = `${height}px`;
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true,
+    attributes: true
+  });
+
+  setInterval(checkForTextarea, 2000);
+}
+
+attachToTextarea(element) {
+  element.dataset.promptAnalyzerAttached = 'true';
+  
+  const captureInput = debounce((e) => {
+    const value = e.target.value || e.target.textContent;
+    if (value?.trim()) {
+      this.updateWordCount(value);
+      if (value !== this.lastAnalyzedPrompt) {
+        this.queueAnalysis(value);
+      }
+    }
+  }, 750);
+
+  const events = ['input', 'change', 'keyup'];
+  events.forEach(event => {
+    element.addEventListener(event, captureInput);
+  });
+
+  element.addEventListener('focus', () => {
+    this.currentTextarea = element;
+  });
+
+  const initialContent = element.value || element.textContent;
+  if (initialContent?.trim()) {
+    this.updateWordCount(initialContent);
+    this.queueAnalysis(initialContent);
   }
 }
 
+updateWordCount(text) {
+  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+  const wordCountElement = this.container.querySelector('.word-count');
+  wordCountElement.textContent = words.length.toString();
+}
+
+queueAnalysis(prompt) {
+  this.analysisQueue.push(prompt);
+  this.processQueue();
+}
+
+async processQueue() {
+  if (this.isAnalyzing || this.analysisQueue.length === 0) return;
+
+  const prompt = this.analysisQueue.pop();
+  this.analysisQueue = []; // Clear queue to prevent stale analyses
+  
+  await this.analyzePrompt(prompt);
+}
+
+async analyzePrompt(prompt) {
+  if (this.isAnalyzing) return;
+
+  const loading = this.container.querySelector('.loading');
+  const sections = this.container.querySelector('.analysis-sections');
+  const panel = this.container.querySelector('.analyzer-panel');
+
+  try {
+    this.isAnalyzing = true;
+    this.lastAnalyzedPrompt = prompt;
+    
+    loading.classList.remove('hidden');
+    sections.classList.add('hidden');
+    panel.classList.add('analyzing');
+
+    const analysis = await chrome.runtime.sendMessage({
+      action: 'analyzePrompt',
+      prompt
+    });
+
+    if (analysis.error) {
+      throw new Error(analysis.error.message || 'Analysis failed');
+    }
+
+    this.container.querySelector('.rating').textContent = `${analysis.rating}/10`;
+    this.container.querySelector('.enhanced-prompt .section-content').textContent = analysis.enhancedPrompt;
+    this.container.querySelector('.suggestions .section-content').textContent = analysis.suggestions;
+    this.container.querySelector('.strengths .section-content').textContent = analysis.strengths;
+    this.container.querySelector('.weaknesses .section-content').textContent = analysis.weaknesses;
+
+    sections.classList.remove('hidden');
+  } catch (error) {
+    console.error('Analysis error:', error);
+    this.container.querySelector('.suggestions .section-content').textContent = 
+      'Analysis failed. Please check your API key configuration.';
+  } finally {
+    this.isAnalyzing = false;
+    loading.classList.add('hidden');
+    panel.classList.remove('analyzing');
+    this.processQueue();
+  }
+}
+
+resetAnalysis() {
+  this.lastAnalyzedPrompt = '';
+  this.container.querySelector('.rating').textContent = '-/10';
+  this.container.querySelector('.word-count').textContent = '0';
+  this.container.querySelector('.enhanced-prompt .section-content').textContent = '';
+  this.container.querySelector('.suggestions .section-content').textContent = '';
+  this.container.querySelector('.strengths .section-content').textContent = '';
+  this.container.querySelector('.weaknesses .section-content').textContent = '';
+  this.showSuccessMessage('Analysis reset');
+}
+
+showSuccessMessage(message) {
+  const messageElement = document.createElement('div');
+  messageElement.className = 'success-message';
+  messageElement.textContent = message;
+  document.body.appendChild(messageElement);
+
+  setTimeout(() => {
+    messageElement.remove();
+  }, 2000);
+}
+
+togglePanel() {
+  this.container.classList.toggle('hidden');
+}
+
+resize(width, height) {
+  const panel = this.container.querySelector('.analyzer-panel');
+  if (width) panel.style.width = `${width}px`;
+  if (height) panel.style.maxHeight = `${height}px`;
+}
+}
 
 const initAnalyzer = () => {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => new PromptAnalyzer());
-  } else {
-    new PromptAnalyzer();
-  }
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new PromptAnalyzer());
+} else {
+  new PromptAnalyzer();
+}
 };
 
 initAnalyzer();
