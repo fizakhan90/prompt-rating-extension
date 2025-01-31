@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "AI Prompt Analyzer",
+  "version": "1.0",
+  "description": "Real-time AI prompt analysis and suggestions",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "content_scripts": [{
+    "matches": [
+      "https://chatgpt.com/*",
+      "https://claude.ai/*"
+    ],
+    "js": ["content.js"]
+  }],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
+
+
+  
