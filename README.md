@@ -48,7 +48,10 @@ For first-time setup, follow these steps to store your Gemini API key in Chrome'
 In the console, enter the following command (replace `YOUR_API_KEY` with your actual Gemini API key):
 
 ```javascript
-localStorage.setItem('gemini_api_key', 'YOUR_API_KEY');
+chrome.storage.local.set({ gemini_api_key: 'YOUR_API_KEY' }, function() {
+  console.log('Gemini API key saved.');
+});
+
 ```
 
 ### Use the Extension
