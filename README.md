@@ -41,7 +41,7 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 For first-time setup, follow these steps to store your Gemini API key in Chrome's local storage:
 
 ### 1. Open Chrome's Developer Console:
-- Right-click anywhere on the extension's page (or any page) and select **Inspect**.
+- Click on service_worker after going to the extension and then **Inspect**.
 - Navigate to the **Console** tab.
 
 ### 2. Store Your API Key:
