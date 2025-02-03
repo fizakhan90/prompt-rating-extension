@@ -1,6 +1,6 @@
-function debounce(func, wait) {
+function debounce(func, wait) { 
   let timeout;
-  return function(...args) {
+  return function (...args) {
     clearTimeout(timeout);
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
@@ -10,9 +10,7 @@ class PromptAnalyzer {
   constructor() {
     this.lastAnalyzedPrompt = '';
     this.isAnalyzing = false;
-    this.analysisQueue = [];
     this.currentTextarea = null;
-    this.isMinimized = false;
     this.initialize();
   }
 
@@ -27,651 +25,648 @@ class PromptAnalyzer {
     container.innerHTML = `
       <div class="analyzer-panel">
         <div class="analyzer-header">
-          <div class="header-left">
-            <span class="status-indicator"></span>
-            <h3>Prompt Analysis</h3>
+          <div class="drag-handle">
+            <div class="status-indicator">
+              <div class="pulse"></div>
+              <div class="inner-dot"></div>
+            </div>
+            <h3>AI Prompt Optimizer</h3>
           </div>
           <div class="header-controls">
-            <button class="minimize-btn" title="Minimize">−</button>
-            <button class="close-btn" title="Close">×</button>
+            <button class="icon-btn minimize-btn" aria-label="Minimize">
+              <svg width="18" height="2" viewBox="0 0 18 2"><path d="M0 0h18v2H0z" fill="currentColor"/></svg>
+            </button>
+            <button class="icon-btn close-btn" aria-label="Close">
+              <svg width="16" height="16" viewBox="0 0 16 16"><path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z" fill="currentColor"/></svg>
+            </button>
           </div>
         </div>
         <div class="analyzer-content">
           <div class="metrics-grid">
-            <div class="metric-card">
-              <div class="metric-label">Rating</div>
-              <div class="metric-value rating">-/10</div>
+            <div class="metric-card rating-card">
+              <div class="metric-icon">⭐</div>
+              <div class="metric-data">
+                <span class="metric-value">-</span>
+                <span class="metric-label">Quality Score</span>
+              </div>
             </div>
             <div class="metric-card">
-              <div class="metric-label">Words</div>
-              <div class="metric-value word-count">0</div>
+              <div class="metric-icon">📝</div>
+              <div class="metric-data">
+                <span class="metric-value word-count">0</span>
+                <span class="metric-label">Word Count</span>
+              </div>
             </div>
           </div>
           
-          <div class="loading hidden">
-            <div class="spinner"></div>
-            <span>Analyzing prompt...</span>
+          <div class="loading-state">
+            <div class="bouncing-loader">
+              <div></div>
+              <div></div>
+              <div></div>
+            </div>
+            <span class="loading-text">Analyzing your prompt...</span>
           </div>
-          
-          <div class="analysis-sections">
-            <div class="section enhanced-prompt">
+  
+          <div class="analysis-results">
+            <div class="result-section enhanced-prompt">
               <div class="section-header">
-                <span class="section-icon">✍️</span>
-                <h4>Enhanced Prompt</h4>
-                <button class="copy-btn" title="Copy to clipboard">📋</button>
+                <div class="section-title">
+                  <span class="section-icon">🚀</span>
+                  <h4>Optimized Prompt</h4>
+                </div>
+                <button class="copy-btn" data-tooltip="Copy optimized prompt">
+                  <svg width="20" height="20" viewBox="0 0 24 24"><path d="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12V1Z" fill="currentColor"/></svg>
+                </button>
               </div>
-              <div class="section-content"></div>
+              <div class="section-content scrollable-content"></div>
             </div>
-
-            <div class="section suggestions">
-              <div class="section-header">
-                <span class="section-icon">💡</span>
-                <h4>Suggestions</h4>
+  
+            <!-- Improved Horizontal Insights Layout -->
+            <div class="analysis-insights">
+              <div class="insight-card">
+                <div class="insight-header">
+                  <span class="insight-icon">💡</span>
+                  <h4>Suggestions</h4>
+                </div>
+                <div class="insight-content" data-insight="suggestions"></div>
               </div>
-              <div class="section-content"></div>
-            </div>
-            
-            <div class="section strengths">
-              <div class="section-header">
-                <span class="section-icon">✨</span>
-                <h4>Strengths</h4>
+              <div class="insight-card">
+                <div class="insight-header">
+                  <span class="insight-icon">✅</span>
+                  <h4>Strengths</h4>
+                </div>
+                <div class="insight-content" data-insight="strengths"></div>
               </div>
-              <div class="section-content"></div>
-            </div>
-            
-            <div class="section weaknesses">
-              <div class="section-header">
-                <span class="section-icon">⚠️</span>
-                <h4>Weaknesses</h4>
+              <div class="insight-card">
+                <div class="insight-header">
+                  <span class="insight-icon">⚠️</span>
+                  <h4>Improvements</h4>
+                </div>
+                <div class="insight-content" data-insight="weaknesses"></div>
               </div>
-              <div class="section-content"></div>
             </div>
           </div>
-
-          <div class="action-buttons">
-            <button class="apply-enhanced">Apply Enhanced Prompt</button>
-            <button class="reset-analysis">Reset Analysis</button>
+  
+          <div class="action-bar">
+            <button class="primary-btn apply-btn">
+              <span class="btn-icon">✏️</span>
+              Apply Optimized Prompt
+            </button>
+            <button class="secondary-btn reset-btn">
+              <span class="btn-icon">🔄</span>
+              Reset Analysis
+            </button>
           </div>
         </div>
       </div>
     `;
-
-    const styles = document.createElement('style');
-    styles.textContent = `
-      #prompt-analyzer {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        width: 320px;
-        z-index: 99999;
-        font-family: -apple-system, system-ui, sans-serif;
-        transition: all 0.3s ease;
-      }
-
-      .analyzer-panel {
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-        border: 1px solid #e0e0e0;
-        opacity: 0.95;
-        transition: all 0.3s ease;
-      }
-
-      .analyzer-panel.minimized {
-        width: 180px !important;
-        transform: translateY(-80%);
-      }
-
-      .analyzer-panel.minimized .analyzer-content {
-        display: none;
-      }
-
-      .analyzer-panel.minimized .analyzer-header {
-        border-bottom: none;
-        border-radius: 12px;
-      }
-
-      .analyzer-header {
-        padding: 12px 16px;
-        border-bottom: 1px solid #e0e0e0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #f8f9fa;
-        border-radius: 12px 12px 0 0;
-        cursor: move;
-      }
-
-      .header-left {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .header-controls {
-        display: flex;
-        gap: 4px;
-      }
-
-      .status-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #22c55e;
-      }
-
-      .analyzer-header h3 {
-        margin: 0;
-        font-size: 14px;
-        font-weight: 600;
-        color: #333;
-      }
-
-      .minimize-btn, .close-btn {
-        background: none;
-        border: none;
-        font-size: 16px;
-        cursor: pointer;
-        color: #666;
-        padding: 4px 8px;
-        border-radius: 4px;
-        transition: all 0.2s ease;
-      }
-
-      .minimize-btn:hover, .close-btn:hover {
-        background: #e0e0e0;
-        color: #333;
-      }
-
-      .analyzer-content {
-        padding: 16px;
-        max-height: calc(100vh - 100px);
-        overflow-y: auto;
-      }
-
-      .metrics-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-
-      .metric-card {
-        background: #f8f9fa;
-        padding: 12px;
-        border-radius: 8px;
-        text-align: center;
-      }
-
-      .metric-label {
-        font-size: 12px;
-        color: #64748b;
-        margin-bottom: 4px;
-      }
-
-      .metric-value {
-        font-size: 18px;
-        font-weight: 600;
-        color: #2563eb;
-      }
-
-      .loading {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
-        gap: 10px;
-      }
-
-      .spinner {
-        width: 20px;
-        height: 20px;
-        border: 2px solid #e0e0e0;
-        border-top-color: #2563eb;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      .section {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 12px;
-        transition: all 0.2s ease;
-        border: 1px solid transparent;
-      }
-
-      .section:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      }
-
-      .section-header {
-        position: relative;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
-      }
-
-      .section-content {
-        font-size: 14px;
-        line-height: 1.5;
-        color: #475569;
-      }
-
-      .enhanced-prompt {
-        background: #f0f9ff;
-        border-left: 4px solid #2563eb;
-      }
-
-      .suggestions { background: #fff7ed; }
-      .strengths { background: #f0fdf4; }
-      .weaknesses { background: #fef2f2; }
-
-      .copy-btn {
-        position: absolute;
-        right: 0;
-        top: 50%;
-        transform: translateY(-50%);
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        border-radius: 4px;
-        opacity: 0.7;
-        transition: opacity 0.2s;
-      }
-
-      .copy-btn:hover {
-        opacity: 1;
-        background: rgba(0, 0, 0, 0.05);
-      }
-
-      .action-buttons {
-        display: flex;
-        gap: 8px;
-        margin-top: 16px;
-      }
-
-      .apply-enhanced {
-        background: #2563eb;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background 0.2s;
-        flex: 1;
-      }
-
-      .apply-enhanced:hover {
-        background: #1d4ed8;
-      }
-
-      .reset-analysis {
-        background: #e5e7eb;
-        color: #374151;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        font-weight: 500;
-        transition: background 0.2s;
-      }
-
-      .reset-analysis:hover {
-        background: #d1d5db;
-      }
-
-      .success-message {
-        position: fixed;
-        bottom: 20px;
-        right: 20px;
-        background: #10b981;
-        color: white;
-        padding: 12px 20px;
-        border-radius: 8px;
-        animation: fadeInOut 2s forwards;
-        z-index: 100000;
-      }
-
-      .tooltip {
-        position: absolute;
-        background: #333;
-        color: white;
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        pointer-events: none;
-        opacity: 0;
-        transition: opacity 0.2s;
-      }
-
-      .tooltip.visible {
-        opacity: 1;
-      }
-
-      @keyframes fadeInOut {
-        0% { opacity: 0; transform: translateY(20px); }
-        20% { opacity: 1; transform: translateY(0); }
-        80% { opacity: 1; transform: translateY(0); }
-        100% { opacity: 0; transform: translateY(-20px); }
-      }
-
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-
-      @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-        100% { transform: scale(1); }
-      }
-
-      .analyzing .status-indicator {
-        background: #f59e0b;
-        animation: pulse 1s infinite;
-      }
-
-      .hidden {
-        display: none !important;
-      }
-    `;
-
-    document.head.appendChild(styles);
+  
     document.body.appendChild(container);
-    
-    this.makeDraggable(container.querySelector('.analyzer-panel'), container.querySelector('.analyzer-header'));
+    document.head.appendChild(styles);
+    document.head.appendChild(toastStyles);
+
     this.container = container;
-    
     this.setupEventListeners();
+    this.makeDraggable();
   }
 
   setupEventListeners() {
-    const panel = this.container.querySelector('.analyzer-panel');
     const minimizeBtn = this.container.querySelector('.minimize-btn');
     const closeBtn = this.container.querySelector('.close-btn');
-    const resetBtn = this.container.querySelector('.reset-analysis');
-
-    minimizeBtn.addEventListener('click', () => {
-      this.isMinimized = !this.isMinimized;
-      panel.classList.toggle('minimized');
-      minimizeBtn.textContent = this.isMinimized ? '+' : '−';
-      minimizeBtn.title = this.isMinimized ? 'Expand' : 'Minimize';
-    });
-
-    closeBtn.addEventListener('click', () => {
-      this.container.classList.add('hidden');
-    });
-
-    resetBtn.addEventListener('click', () => {
-      this.resetAnalysis();
-    });
-
-    this.setupEnhancedPromptFeatures();
-    this.setupTooltips();
-  }
-
-  setupTooltips() {
-    const tooltip = document.createElement('div');
-    tooltip.className = 'tooltip';
-    document.body.appendChild(tooltip);
-
-    const showTooltip = (element, text) => {
-      const rect = element.getBoundingClientRect();
-      tooltip.textContent = text;
-      tooltip.style.top = `${rect.bottom + 5}px`;
-      tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
-      tooltip.classList.add('visible');
-    };
-
-    const hideTooltip = () => {
-      tooltip.classList.remove('visible');
-    };
-
-    const tooltipElements = this.container.querySelectorAll('[title]');
-    tooltipElements.forEach(element => {
-      const tooltipText = element.getAttribute('title');
-      element.removeAttribute('title');
-      
-      element.addEventListener('mouseenter', () => showTooltip(element, tooltipText));
-      element.addEventListener('mouseleave', hideTooltip);
-    });
-  }
-
-  setupEnhancedPromptFeatures() {
     const copyBtn = this.container.querySelector('.copy-btn');
-    const applyBtn = this.container.querySelector('.apply-enhanced');
+    const applyBtn = this.container.querySelector('.apply-btn');
+    const resetBtn = this.container.querySelector('.reset-btn');
 
-    copyBtn.addEventListener('click', () => {
-      const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
-      navigator.clipboard.writeText(enhancedPrompt);
-      this.showSuccessMessage('Enhanced prompt copied to clipboard');
-    });
-
-    applyBtn.addEventListener('click', () => {
-      if (this.currentTextarea) {
-        const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
-        if (this.currentTextarea.value !== undefined) {
-          this.currentTextarea.value = enhancedPrompt;
-        } else {
-          this.currentTextarea.textContent = enhancedPrompt;
-        }
-        this.currentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-        this.showSuccessMessage('Enhanced prompt applied');
-      }
-    });
+    minimizeBtn.addEventListener('click', () => this.toggleMinimize());
+    closeBtn.addEventListener('click', () => this.container.classList.add('hidden'));
+    copyBtn.addEventListener('click', () => this.copyEnhancedPrompt());
+    applyBtn.addEventListener('click', () => this.applyEnhancedPrompt());
+    resetBtn.addEventListener('click', () => this.resetAnalysis());
   }
 
-  makeDraggable(element, handle) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  makeDraggable() {
+    const panel = this.container.querySelector('.analyzer-panel');
+    const handle = this.container.querySelector('.drag-handle');
+    let isDragging = false;
+    let startX, startY, xOffset = 0, yOffset = 0;
 
-    const dragMouseDown = (e) => {
-      e.preventDefault();
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      document.addEventListener('mousemove', elementDrag);
-      document.addEventListener('mouseup', closeDragElement);
+    const dragStart = (e) => {
+      if (handle.contains(e.target)) {
+        isDragging = true;
+        startX = e.clientX - xOffset;
+        startY = e.clientY - yOffset;
+        panel.style.transition = 'none';
+      }
     };
 
-    const elementDrag = (e) => {
+    const dragEnd = () => {
+      isDragging = false;
+      panel.style.transition = 'transform 0.2s ease';
+    };
+
+    const drag = (e) => {
+      if (!isDragging) return;
       e.preventDefault();
-      pos1 = pos3 - e.clientX;
-      pos2 = pos4 - e.clientY;
-      pos3 = e.clientX;
-      pos4 = e.clientY;
-      
-      const rect = element.getBoundingClientRect();
-      const newTop = element.offsetTop - pos2;
-      const newLeft = element.offsetLeft - pos1;
-      
-      if (newTop > 0 && newTop < window.innerHeight - rect.height) {
-        element.style.top = newTop + "px";
-      }
-      if (newLeft > 0 && newLeft < window.innerWidth - rect.width) {
-        element.style.left = newLeft + "px";
-      }
-  };
+      xOffset = e.clientX - startX;
+      yOffset = e.clientY - startY;
+      panel.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
+    };
 
-  const closeDragElement = () => {
-    document.removeEventListener('mousemove', elementDrag);
-    document.removeEventListener('mouseup', closeDragElement);
-  };
-
-  handle.addEventListener('mousedown', dragMouseDown);
-}
-
-observeTextarea() {
-  const textareaSelectors = [
-    '#prompt-textarea',
-    '[data-id="root"]',
-    'textarea.prompt-textarea',
-    'textarea[placeholder*="Send a message"]',
-    'textarea[placeholder*="Type your message"]',
-    'textarea[role="textbox"]',
-    '.prosemirror-editor',
-    '[contenteditable="true"]'
-  ];
-
-  const checkForTextarea = () => {
-    for (const selector of textareaSelectors) {
-      const elements = document.querySelectorAll(selector);
-      elements.forEach(element => {
-        if (!element.dataset.promptAnalyzerAttached) {
-          this.attachToTextarea(element);
-        }
-      });
-    }
-  };
-  
-  checkForTextarea();
-
-  const observer = new MutationObserver(debounce(() => {
-    checkForTextarea();
-  }, 500));
-
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    attributes: true
-  });
-
-  setInterval(checkForTextarea, 2000);
-}
-
-attachToTextarea(element) {
-  element.dataset.promptAnalyzerAttached = 'true';
-  
-  const captureInput = debounce((e) => {
-    const value = e.target.value || e.target.textContent;
-    if (value?.trim()) {
-      this.updateWordCount(value);
-      if (value !== this.lastAnalyzedPrompt) {
-        this.queueAnalysis(value);
-      }
-    }
-  }, 750);
-
-  const events = ['input', 'change', 'keyup'];
-  events.forEach(event => {
-    element.addEventListener(event, captureInput);
-  });
-
-  element.addEventListener('focus', () => {
-    this.currentTextarea = element;
-  });
-
-  const initialContent = element.value || element.textContent;
-  if (initialContent?.trim()) {
-    this.updateWordCount(initialContent);
-    this.queueAnalysis(initialContent);
+    document.addEventListener('mousedown', dragStart);
+    document.addEventListener('mouseup', dragEnd);
+    document.addEventListener('mousemove', drag);
   }
-}
 
-updateWordCount(text) {
-  const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-  const wordCountElement = this.container.querySelector('.word-count');
-  wordCountElement.textContent = words.length.toString();
-}
+  observeTextarea() {
+    const textareaSelectors = [
+      '#prompt-textarea',
+      '[data-id="root"]',
+      'textarea.prompt-textarea',
+      'textarea[placeholder*="Send a message"]',
+      'textarea[placeholder*="Type your message"]',
+      'textarea[role="textbox"]',
+      '[contenteditable="true"]'
+    ];
 
-queueAnalysis(prompt) {
-  this.analysisQueue.push(prompt);
-  this.processQueue();
-}
+    const observer = new MutationObserver(() => {
+      textareaSelectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(element => {
+          if (!element.dataset.promptAnalyzerAttached) {
+            this.attachToTextarea(element);
+          }
+        });
+      });
+    });
 
-async processQueue() {
-  if (this.isAnalyzing || this.analysisQueue.length === 0) return;
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
 
-  const prompt = this.analysisQueue.pop();
-  this.analysisQueue = []; // Clear queue to prevent stale analyses
-  
-  await this.analyzePrompt(prompt);
-}
+  attachToTextarea(element) {
+    element.dataset.promptAnalyzerAttached = 'true';
+    this.currentTextarea = element;
+    element.addEventListener('input', debounce((e) => {
+      const value = e.target.value || e.target.textContent;
+      if (value?.trim()) {
+        this.updateWordCount(value);
+        if (value !== this.lastAnalyzedPrompt) {
+          this.analyzePrompt(value);
+        }
+      }
+    }, 500));
+  }
 
-async analyzePrompt(prompt) {
-  if (this.isAnalyzing) return;
+  toggleMinimize() {
+    this.container.querySelector('.analyzer-panel').classList.toggle('minimized');
+  }
 
-  const loading = this.container.querySelector('.loading');
-  const sections = this.container.querySelector('.analysis-sections');
-  const panel = this.container.querySelector('.analyzer-panel');
+  copyEnhancedPrompt() {
+    const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
+    navigator.clipboard.writeText(enhancedPrompt);
+    this.showToast('Copied to clipboard');
+  }
 
-  try {
+  applyEnhancedPrompt() {
+    const enhancedPrompt = this.container.querySelector('.enhanced-prompt .section-content').textContent;
+    if (this.currentTextarea) {
+      if (this.currentTextarea.tagName === 'INPUT' || this.currentTextarea.tagName === 'TEXTAREA') {
+        this.currentTextarea.value = enhancedPrompt;
+        this.currentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      } else if (this.currentTextarea.isContentEditable) {
+        this.currentTextarea.innerHTML = enhancedPrompt;
+        this.currentTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      this.showToast('Enhanced prompt applied');
+    } else {
+      this.showToast('No active input found');
+    }
+  }
+
+  resetAnalysis() {
+    this.container.querySelector('.enhanced-prompt .section-content').textContent = '';
+    const insights = this.container.querySelectorAll('.insight-content');
+    insights.forEach(el => el.textContent = '');
+    this.container.querySelector('.metric-value').textContent = '-';
+    this.container.querySelector('.word-count').textContent = '0';
+    this.lastAnalyzedPrompt = '';
+    this.showToast('Analysis reset');
+  }
+
+  showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  updateWordCount(text) {
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    this.container.querySelector('.word-count').textContent = words.length;
+  }
+
+  async analyzePrompt(prompt) {
+    if (this.isAnalyzing) return;
+    
     this.isAnalyzing = true;
     this.lastAnalyzedPrompt = prompt;
     
-    loading.classList.remove('hidden');
-    sections.classList.add('hidden');
+    const panel = this.container.querySelector('.analyzer-panel');
+    const loading = this.container.querySelector('.loading-state');
+    const results = this.container.querySelector('.analysis-results');
+    
+    loading.style.display = 'flex';
+    results.style.display = 'none';
     panel.classList.add('analyzing');
 
-    const analysis = await chrome.runtime.sendMessage({
-      action: 'analyzePrompt',
-      prompt
-    });
+    try {
+      const analysis = await chrome.runtime.sendMessage({
+        action: 'analyzePrompt',
+        prompt
+      });
 
-    if (analysis.error) {
-      throw new Error(analysis.error.message || 'Analysis failed');
+      if (analysis.error) throw new Error(analysis.error.message);
+
+      this.container.querySelector('.metric-value').textContent = analysis.rating;
+      this.container.querySelector('.enhanced-prompt .section-content').textContent = analysis.enhancedPrompt;
+      this.container.querySelector('[data-insight="suggestions"]').innerHTML = analysis.suggestions;
+      this.container.querySelector('[data-insight="strengths"]').innerHTML = analysis.strengths;
+      this.container.querySelector('[data-insight="weaknesses"]').innerHTML = analysis.weaknesses;
+
+      results.style.display = 'block';
+    } catch (error) {
+      console.error('Analysis error:', error);
+      this.container.querySelector('[data-insight="suggestions"]').textContent = 
+        'Analysis failed. Please check your API key configuration.';
+    } finally {
+      this.isAnalyzing = false;
+      loading.style.display = 'none';
+      panel.classList.remove('analyzing');
     }
-
-    this.container.querySelector('.rating').textContent = `${analysis.rating}/10`;
-    this.container.querySelector('.enhanced-prompt .section-content').textContent = analysis.enhancedPrompt;
-    this.container.querySelector('.suggestions .section-content').textContent = analysis.suggestions;
-    this.container.querySelector('.strengths .section-content').textContent = analysis.strengths;
-    this.container.querySelector('.weaknesses .section-content').textContent = analysis.weaknesses;
-
-    sections.classList.remove('hidden');
-  } catch (error) {
-    console.error('Analysis error:', error);
-    this.container.querySelector('.suggestions .section-content').textContent = 
-      'Analysis failed. Please check your API key configuration.';
-  } finally {
-    this.isAnalyzing = false;
-    loading.classList.add('hidden');
-    panel.classList.remove('analyzing');
-    this.processQueue();
   }
 }
 
-resetAnalysis() {
-  this.lastAnalyzedPrompt = '';
-  this.container.querySelector('.rating').textContent = '-/10';
-  this.container.querySelector('.word-count').textContent = '0';
-  this.container.querySelector('.enhanced-prompt .section-content').textContent = '';
-  this.container.querySelector('.suggestions .section-content').textContent = '';
-  this.container.querySelector('.strengths .section-content').textContent = '';
-  this.container.querySelector('.weaknesses .section-content').textContent = '';
-  this.showSuccessMessage('Analysis reset');
-}
+const fontLink = document.createElement('link');
+fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+fontLink.rel = 'stylesheet';
+document.head.appendChild(fontLink);
 
-showSuccessMessage(message) {
-  const messageElement = document.createElement('div');
-  messageElement.className = 'success-message';
-  messageElement.textContent = message;
-  document.body.appendChild(messageElement);
+const styles = document.createElement('style');
+styles.textContent = `
+  /* Container */
+  #prompt-analyzer {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    width: 420px;
+    z-index: 99999;
+    font-family: 'Inter', sans-serif;
+  }
+  /* Panel */
+  #prompt-analyzer .analyzer-panel {
+    background: #2d2d2d;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid #444;
+    backdrop-filter: blur(10px);
+    transform: translateY(0);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  #prompt-analyzer .analyzer-panel:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+  }
+  /* Header */
+  #prompt-analyzer .analyzer-header {
+    padding: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #4f46e5 0%, #6d28d9 100%);
+    border-radius: 16px 16px 0 0;
+    cursor: grab;
+  }
+  #prompt-analyzer .analyzer-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+  }
+  #prompt-analyzer .header-controls {
+    display: flex;
+    gap: 8px;
+  }
+  #prompt-analyzer .icon-btn {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    padding: 6px;
+    border-radius: 6px;
+    color: #ffffff;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  #prompt-analyzer .icon-btn:hover {
+    background: rgba(255,255,255,0.3);
+  }
+  /* Drag handle */
+  #prompt-analyzer .drag-handle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  #prompt-analyzer .status-indicator {
+    position: relative;
+    width: 16px;
+    height: 16px;
+  }
+  #prompt-analyzer .inner-dot {
+    width: 8px;
+    height: 8px;
+    background: #ffffff;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+  #prompt-analyzer .pulse {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+    z-index: 1;
+  }
+  @keyframes pulse {
+    0% { transform: scale(0.8); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+  }
+  /* Metrics */
+  #prompt-analyzer .metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 20px;
+  }
+  #prompt-analyzer .metric-card {
+    background: #3a3a3a;
+    padding: 16px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: transform 0.2s ease;
+  }
+  #prompt-analyzer .metric-card:hover {
+    transform: translateY(-2px);
+  }
+  #prompt-analyzer .metric-icon {
+    font-size: 24px;
+    padding: 12px;
+    background: rgba(79,70,229,0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #prompt-analyzer .metric-data {
+    display: flex;
+    flex-direction: column;
+  }
+  #prompt-analyzer .metric-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #ffffff;
+  }
+  #prompt-analyzer .metric-label {
+    font-size: 13px;
+    color: #a1a1aa;
+  }
+  /* Analysis results */
+  #prompt-analyzer .result-section {
+    background: #3a3a3a;
+    border-radius: 12px;
+    margin: 0 20px 20px;
+    overflow: hidden;
+  }
+  #prompt-analyzer .section-header {
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(79,70,229,0.2);
+    border-bottom: 1px solid #444;
+  }
+  #prompt-analyzer .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  #prompt-analyzer .section-icon {
+    font-size: 20px;
+    color: #ffffff;
+  }
+  #prompt-analyzer .section-content {
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #e5e5e5;
+  }
+  #prompt-analyzer .scrollable-content {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  /* Improved Analysis Insights */
+  .analysis-insights {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    overflow-x: auto;
+  }
+  .insight-card {
+    flex: 1;
+    background: linear-gradient(135deg, #3a3a3a, #2a2a2a);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .insight-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+  }
+  .insight-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+  }
+  .insight-header h4 {
+    margin: 0;
+    font-size: 16px;
+    color: #fff;
+    font-weight: 600;
+  }
+  .insight-icon {
+    font-size: 20px;
+    color: #4f46e5;
+    background: rgba(79,70,229,0.2);
+    padding: 4px;
+    border-radius: 50%;
+  }
+  .insight-content {
+    font-size: 14px;
+    color: #e5e5e5;
+    max-height: 220px;
+    overflow-y: auto;
+    line-height: 1.5;
+  }
+  /* Action Bar */
+  #prompt-analyzer .action-bar {
+    padding: 16px 20px;
+    border-top: 1px solid #444;
+    display: flex;
+    gap: 8px;
+  }
+  #prompt-analyzer .primary-btn, 
+  #prompt-analyzer .secondary-btn {
+    flex: 1;
+    background: #4f46e5;
+    color: #ffffff;
+    border: none;
+    padding: 14px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    transition: background 0.2s ease;
+  }
+  #prompt-analyzer .primary-btn:hover,
+  #prompt-analyzer .secondary-btn:hover {
+    background: #4338ca;
+  }
+  /* Loading State */
+  #prompt-analyzer .loading-state {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+  }
+  #prompt-analyzer .bouncing-loader {
+    display: flex;
+    gap: 6px;
+  }
+  #prompt-analyzer .bouncing-loader div {
+    width: 10px;
+    height: 10px;
+    background: #4f46e5;
+    border-radius: 50%;
+    animation: bouncing 0.6s infinite alternate;
+  }
+  #prompt-analyzer .bouncing-loader div:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  #prompt-analyzer .bouncing-loader div:nth-child(3) {
+    animation-delay: 0.4s;
+  }
+  @keyframes bouncing {
+    to {
+      transform: translateY(-10px);
+      opacity: 0.5;
+    }
+  }
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100000;
+    animation: toast 0.3s ease-out forwards;
+  }
+  @keyframes toast {
+    from {
+      transform: translate(-50%, 100%);
+      opacity: 0;
+    }
+    to {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+  }
+  /* Minimized */
+  #prompt-analyzer .analyzer-panel.minimized {
+    height: 60px;
+    overflow: hidden;
+  }
+  #prompt-analyzer .analyzer-panel.minimized .analyzer-content {
+    display: none;
+  }
+`;
 
-  setTimeout(() => {
-    messageElement.remove();
-  }, 2000);
-}
-
-togglePanel() {
-  this.container.classList.toggle('hidden');
-}
-
-resize(width, height) {
-  const panel = this.container.querySelector('.analyzer-panel');
-  if (width) panel.style.width = `${width}px`;
-  if (height) panel.style.maxHeight = `${height}px`;
-}
-}
+const toastStyles = document.createElement('style');
+toastStyles.textContent = `
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #ffffff;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100000;
+    animation: toast 0.3s ease-out forwards;
+  }
+  @keyframes toast {
+    from {
+      transform: translate(-50%, 100%);
+      opacity: 0;
+    }
+    to {
+      transform: translate(-50%, 0);
+      opacity: 1;
+    }
+  }
+`;
 
 const initAnalyzer = () => {
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new PromptAnalyzer());
-} else {
-  new PromptAnalyzer();
-}
+  if (!window.promptAnalyzer) {
+    window.promptAnalyzer = new PromptAnalyzer();
+  }
 };
 
-initAnalyzer();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAnalyzer);
+} else {
+  initAnalyzer();
+}
+
+
+
+
+
+
