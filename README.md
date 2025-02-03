@@ -40,12 +40,11 @@ GEMINI_API_KEY=your_actual_gemini_api_key_here
 
 For first-time setup, follow these steps to store your Gemini API key in Chrome's local storage:
 
-### 1. Open Chrome's Developer Console:
-- Click on service_worker after going to the extension and then **Inspect**.
-- Navigate to the **Console** tab.
-
-### 2. Store Your API Key:
-In the console, enter the following command (replace `YOUR_API_KEY` with your actual Gemini API key):
+## Open the Service Worker Console:
+1. Go to chrome://extensions/.
+Locate PromptPal and click on Service Worker (under "Inspect views") to open its console.
+2. Store Your API Key:
+In the service worker console, enter the following code (replace YOUR_API_KEY with your actual Gemini API key):
 
 ```javascript
 chrome.storage.local.set({ gemini_api_key: 'YOUR_API_KEY' }, function() {
@@ -54,9 +53,20 @@ chrome.storage.local.set({ gemini_api_key: 'YOUR_API_KEY' }, function() {
 
 ```
 
-### Use the Extension
-1. Click on the extension icon in the Chrome toolbar
-2. Enter a prompt(in ChatGPT or Claude) and get responses from the Gemini API
+## Using the Extension
+Activate PromptPal:
+Click on the PromptPal icon in your Chrome toolbar.
+
+Enter Your Prompt:
+Input your prompt (in environments such as ChatGPT or Claude).
+
+Analyze and Optimize:
+The extension will analyze your prompt in real time and provide suggestions for improvement.
+
+Apply Enhanced Prompt:
+Use the "Apply Enhanced Prompt" button to automatically replace your original prompt with the optimized version.
+
+
 
 ## Contributing
 If you'd like to contribute:
